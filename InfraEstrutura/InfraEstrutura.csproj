@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="CrossCuting\" />
-    <Folder Include="Repositorio\" />
   </ItemGroup>
 
   <ItemGroup>
