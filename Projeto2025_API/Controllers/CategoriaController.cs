@@ -1,6 +1,8 @@
 ﻿using Azure.Core;
 using Dominio.Dtos;
+using FluentValidation;
 using Interface.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,24 +10,35 @@ namespace Projeto2025_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CategoriaController : ControllerBase
     {
 
         private ICategoriaService service;
+        private IValidator<CategoriaDto> validator;
 
         public CategoriaController(ICategoriaService 
-            service)
+            service, IValidator<CategoriaDto> validator)
         {
             this.service = service;
+            this.validator = validator;
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CategoriaDto>>
             addAsync (CategoriaDto categoriaDto)
         {
 
-           var dto=  await  this.service.addAsync (categoriaDto);
-           return Ok (dto);
+            var result = validator.Validate(categoriaDto);
+            if (result.IsValid)
+            {
+                var dto = await this.service.addAsync(categoriaDto);
+                return Ok(dto);
+            }
+            else
+                return BadRequest(result);
+           
 
         }
 
@@ -69,9 +82,16 @@ namespace Projeto2025_API.Controllers
 
         [HttpPut]
         public async Task<ActionResult>
-            updateAsync(CategoriaDto cat) { 
-            await this.service.updateAsync(cat);
-            return NoContent();
+            updateAsync(CategoriaDto cat) {
+
+
+            var result = validator.Validate(cat);
+            if (result.IsValid)
+            {
+                await this.service.updateAsync(cat);
+                return NoContent();
+            }
+            else return BadRequest(result);
         
         }
 

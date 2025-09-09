@@ -2,6 +2,7 @@
 using InfraEstrutura.Data;
 using Interface.Repositorio;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,14 +40,20 @@ namespace InfraEstrutura.Repositorio
            return await
                 this.contexto.Categorias
                 .Where(expression)
+                .Include(p=>p.produtos)
                 .OrderBy(p=>p.Descricao)
                 .ToListAsync(); 
         }
 
         public async Task<Categoria?> getAsync(int id)
         {
+            //return await
+            //    this.contexto.Categorias.FindAsync(id);
             return await
-                this.contexto.Categorias.FindAsync(id);
+               this.contexto.Categorias
+               .Where(p=>p.Id==id)
+               .Include(p => p.produtos)
+               .FirstOrDefaultAsync();
         }
 
         public async Task removeAsync(Categoria categoria)

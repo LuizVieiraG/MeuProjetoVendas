@@ -16,7 +16,7 @@ namespace Dominio.Dtos
         public string DescricaoDetalhada { get; set; }
 
 
-        [JsonIgnore]
+       // [JsonIgnore]
         public virtual List<ProdutoDto> produtos { get; set; }
          = new List<ProdutoDto>();
 
