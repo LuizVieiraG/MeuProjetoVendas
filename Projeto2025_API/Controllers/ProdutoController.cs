@@ -3,6 +3,7 @@ using FluentValidation;
 using Interface.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Projeto2025_API.Controllers
 {
@@ -83,8 +84,20 @@ namespace Projeto2025_API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> deleteAsync(int id)
         {
-            await _service.removeAsync(id);
-            return NoContent();
+            try
+            {
+                await _service.removeAsync(id);
+                return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            {
+                // Erro de violação de chave estrangeira
+                return BadRequest(new { message = "Não é possível excluir este produto pois ele está sendo utilizado em vendas." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Erro ao excluir produto: {ex.Message}" });
+            }
         }
 
         [HttpPut]

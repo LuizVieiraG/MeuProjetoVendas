@@ -23,29 +23,32 @@ namespace Projeto2025_API.Validation
                 .MaximumLength(100).WithMessage("Email deve ter no máximo 100 caracteres");
 
             RuleFor(x => x.Telefone)
-                .MaximumLength(20).WithMessage("Telefone deve ter no máximo 20 caracteres");
+                .MaximumLength(20).WithMessage("Telefone deve ter no máximo 20 caracteres")
+                .When(x => !string.IsNullOrWhiteSpace(x.Telefone));
 
-            RuleFor(x => x.Cpf)
-                .Must(ValidarCpf).WithMessage("CPF deve ter um formato válido")
-                .MaximumLength(14).WithMessage("CPF deve ter no máximo 14 caracteres");
+            // CPF - sem validação, aceita qualquer valor ou vazio
+            // Removida validação de formato para permitir qualquer CPF
 
             RuleFor(x => x.DataNascimento)
                 .LessThan(DateTime.Now).WithMessage("Data de nascimento deve ser anterior à data atual")
                 .GreaterThan(DateTime.Now.AddYears(-120)).WithMessage("Data de nascimento inválida")
-                .When(x => x.DataNascimento != default(DateTime));
+                .When(x => x.DataNascimento != default(DateTime) && x.DataNascimento != new DateTime(2000, 1, 1));
 
             RuleFor(x => x.Endereco)
-                .MaximumLength(300).WithMessage("Endereço deve ter no máximo 300 caracteres");
+                .MaximumLength(300).WithMessage("Endereço deve ter no máximo 300 caracteres")
+                .When(x => !string.IsNullOrWhiteSpace(x.Endereco));
 
             RuleFor(x => x.Cidade)
-                .MaximumLength(100).WithMessage("Cidade deve ter no máximo 100 caracteres");
+                .MaximumLength(100).WithMessage("Cidade deve ter no máximo 100 caracteres")
+                .When(x => !string.IsNullOrWhiteSpace(x.Cidade));
 
             RuleFor(x => x.Estado)
-                .MaximumLength(2).WithMessage("Estado deve ter no máximo 2 caracteres");
+                .MaximumLength(2).WithMessage("Estado deve ter no máximo 2 caracteres")
+                .When(x => !string.IsNullOrWhiteSpace(x.Estado));
 
             RuleFor(x => x.Cep)
-                .Must(ValidarCep).WithMessage("CEP deve ter um formato válido")
-                .MaximumLength(10).WithMessage("CEP deve ter no máximo 10 caracteres");
+                .MaximumLength(10).WithMessage("CEP deve ter no máximo 10 caracteres")
+                .When(x => !string.IsNullOrWhiteSpace(x.Cep));
         }
 
         private bool ValidarCpf(string cpf)

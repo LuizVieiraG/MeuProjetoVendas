@@ -14,6 +14,7 @@ namespace Projeto2025_API.Mapping
             CreateMap<Cliente, ClienteDto>()
                 .ReverseMap();
             CreateMap<Venda, VendaDto>()
+                .ForMember(dest => dest.NomeCliente, opt => opt.MapFrom(src => src.Cliente != null ? src.Cliente.Nome : string.Empty))
                 .ReverseMap();
             CreateMap<ItemVenda, ItemVendaDto>()
                 .ReverseMap();

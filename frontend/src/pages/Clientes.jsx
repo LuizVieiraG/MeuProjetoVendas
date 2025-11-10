@@ -74,35 +74,105 @@ const Clientes = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    try {
-      // Converter para PascalCase conforme esperado pelo backend
-      const clienteData = {
-        Nome: formData.nome,
-        Email: formData.email,
-        Telefone: formData.telefone || '',
-        Cpf: formData.cpf,
-        DataNascimento: formData.dataNascimento ? new Date(formData.dataNascimento) : new Date(2000, 0, 1),
-        Endereco: formData.endereco || '',
-        Cidade: formData.cidade || '',
-        Estado: formData.estado || '',
-        Cep: formData.cep || '',
-        Ativo: formData.ativo
-      };
+    
+    // Validar campos obrigatórios
+    if (!formData.nome || !formData.nome.trim()) {
+      alert('Nome é obrigatório');
+      return;
+    }
+    
+    if (!formData.email || !formData.email.trim()) {
+      alert('Email é obrigatório');
+      return;
+    }
+    
+    // Converter para PascalCase conforme esperado pelo backend
+    // Remover formatação do CPF e CEP (apenas números)
+    const cpfLimpo = formData.cpf?.replace(/\D/g, '') || '';
+    const cepLimpo = formData.cep?.replace(/\D/g, '') || '';
+    
+    // Preparar data de nascimento
+    // Se não fornecida, usar data padrão válida (01/01/2000)
+    let dataNascimento;
+    if (formData.dataNascimento) {
+      // Criar data a partir da string YYYY-MM-DD
+      const dataParts = formData.dataNascimento.split('-');
+      dataNascimento = new Date(
+        parseInt(dataParts[0]), 
+        parseInt(dataParts[1]) - 1, 
+        parseInt(dataParts[2])
+      );
+    } else {
+      // Data padrão: 01/01/2000
+      dataNascimento = new Date(2000, 0, 1);
+    }
+    
+    // Limitar Estado a 2 caracteres (máximo)
+    const estadoLimpo = formData.estado?.trim().toUpperCase().substring(0, 2) || '';
+    
+    // Preparar dados do cliente (fora do try para estar acessível no catch)
+    const clienteData = {
+      Nome: formData.nome.trim(),
+      Email: formData.email.trim(),
+      Telefone: formData.telefone?.trim() || '',
+      Cpf: cpfLimpo,
+      DataNascimento: dataNascimento.toISOString(),
+      Endereco: formData.endereco?.trim() || '',
+      Cidade: formData.cidade?.trim() || '',
+      Estado: estadoLimpo,
+      Cep: cepLimpo,
+      Ativo: formData.ativo !== undefined ? formData.ativo : true
+    };
 
+    console.log('Enviando dados do cliente:', clienteData);
+
+    try {
+      let resultado;
       if (editingCliente) {
-        await clienteService.update({ ...clienteData, Id: editingCliente.id });
+        resultado = await clienteService.update({ ...clienteData, Id: editingCliente.id });
+        console.log('Cliente atualizado com sucesso:', resultado);
       } else {
-        await clienteService.create(clienteData);
+        resultado = await clienteService.create(clienteData);
+        console.log('Cliente criado com sucesso:', resultado);
       }
 
       await loadClientes();
       handleCloseModal();
+      
+      // Mostrar mensagem de sucesso
+      alert(editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente salvo com sucesso!');
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 
-                           (err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : null) ||
-                           'Erro ao salvar cliente';
+      let errorMessage = 'Erro ao salvar cliente';
+      
+      if (err.response?.data) {
+        // Se houver erros de validação
+        if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          errorMessage = 'Erros de validação:\n\n' + err.response.data.errors.join('\n');
+        } else if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+          if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+            errorMessage += '\n\n' + err.response.data.errors.join('\n');
+          } else if (err.response.data.errors) {
+            errorMessage += '\n\n' + JSON.stringify(err.response.data.errors, null, 2);
+          }
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        } else {
+          // Mostrar todo o objeto de erro para debug
+          errorMessage = 'Erro ao salvar cliente:\n' + JSON.stringify(err.response.data, null, 2);
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Log detalhado no console
+      console.error('=== ERRO AO SALVAR CLIENTE ===');
+      console.error('Status:', err.response?.status);
+      console.error('Dados do erro:', err.response?.data);
+      console.error('Erros de validação:', err.response?.data?.errors);
+      console.error('Dados enviados:', clienteData);
+      
       alert(errorMessage);
-      console.error('Erro completo:', err.response?.data || err);
     }
   };
 
@@ -114,9 +184,12 @@ const Clientes = () => {
     try {
       await clienteService.delete(id);
       await loadClientes();
+      alert('Cliente excluído com sucesso!');
     } catch (err) {
-      alert('Erro ao excluir cliente');
-      console.error(err);
+      const errorMessage = err.response?.data?.message || 
+                           'Não foi possível excluir o cliente pois ele possui vendas associadas.';
+      alert(errorMessage);
+      console.error('Erro ao excluir cliente:', err.response?.data || err);
     }
   };
 
@@ -287,13 +360,13 @@ const Clientes = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CPF *
+                    CPF
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.cpf}
                     onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                    placeholder="000.000.000-00"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

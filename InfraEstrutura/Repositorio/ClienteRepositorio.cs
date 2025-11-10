@@ -35,10 +35,10 @@ namespace InfraEstrutura.Repositorio
 
         public async Task<IEnumerable<Cliente>> getAllAsync(Func<Cliente, bool> filtro)
         {
-            return await Task.FromResult(_contexto.Clientes
+            var clientes = await _contexto.Clientes
                 .Include(c => c.Vendas)
-                .Where(filtro)
-                .ToList());
+                .ToListAsync();
+            return clientes.Where(filtro);
         }
 
         public async Task removeAsync(int id)

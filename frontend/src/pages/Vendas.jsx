@@ -32,6 +32,8 @@ const Vendas = () => {
     try {
       setLoading(true);
       const data = await vendaService.getAll();
+      console.log('Vendas carregadas:', data);
+      console.log('Primeira venda exemplo:', data[0]);
       setVendas(data);
     } catch (err) {
       console.error('Erro ao carregar vendas:', err);
@@ -115,7 +117,11 @@ const Vendas = () => {
   };
 
   const calcularTotal = () => {
-    return itensVenda.reduce((total, item) => total + item.subtotal, 0);
+    const total = itensVenda.reduce((sum, item) => {
+      const subtotal = item.subtotal || 0;
+      return sum + (typeof subtotal === 'number' ? subtotal : parseFloat(subtotal) || 0);
+    }, 0);
+    return total;
   };
 
   const handleSave = async (e) => {
@@ -280,8 +286,13 @@ const Vendas = () => {
                   <div className="text-base font-medium text-white font-gamer">#{venda.id}</div>
                   <div className="text-sm text-gray-400 mt-1">{formatarData(venda.dataVenda)}</div>
                 </td>
-                <td className="px-8 py-5 whitespace-nowrap text-base text-gray-400">
-                  {venda.nomeCliente}
+                <td className="px-8 py-5 whitespace-nowrap">
+                  <div className="text-base font-medium text-white font-gamer">
+                    {venda.nomeCliente || 'Cliente não informado'}
+                  </div>
+                  {venda.idCliente && (
+                    <div className="text-sm text-gray-400 mt-1">ID: {venda.idCliente}</div>
+                  )}
                 </td>
                 <td className="px-8 py-5 whitespace-nowrap text-base font-semibold text-white font-gamer">
                   {formatarMoeda(venda.valorTotal)}
@@ -452,10 +463,12 @@ const Vendas = () => {
                   ))}
                 </div>
 
-                <div className="mt-4 p-4 bg-gray-100 rounded">
+                <div className="mt-4 p-4 bg-gray-100 rounded border-2 border-gray-300">
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span>{formatarMoeda(calcularTotal())}</span>
+                    <span className="text-gray-800">Total:</span>
+                    <span className="text-green-600 text-xl">
+                      {formatarMoeda(calcularTotal() || 0)}
+                    </span>
                   </div>
                 </div>
               </div>

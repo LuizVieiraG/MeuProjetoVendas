@@ -14,17 +14,24 @@ namespace Service
     public class ClienteService : IClienteService
     {
         private readonly IClienteRepositorio _repositorio;
+        private readonly IVendaRepositorio _vendaRepositorio;
         private readonly IMapper _mapper;
 
-        public ClienteService(IClienteRepositorio repositorio, IMapper mapper)
+        public ClienteService(IClienteRepositorio repositorio, IVendaRepositorio vendaRepositorio, IMapper mapper)
         {
             _repositorio = repositorio;
+            _vendaRepositorio = vendaRepositorio;
             _mapper = mapper;
         }
 
         public async Task<ClienteDto> addAsync(ClienteDto clienteDto)
         {
             var cliente = _mapper.Map<Cliente>(clienteDto);
+            // Garantir que DataCadastro seja definida se não foi enviada
+            if (cliente.DataCadastro == default(DateTime))
+            {
+                cliente.DataCadastro = DateTime.Now;
+            }
             var clienteAdicionado = await _repositorio.addAsync(cliente);
             return _mapper.Map<ClienteDto>(clienteAdicionado);
         }
@@ -56,6 +63,13 @@ namespace Service
 
         public async Task removeAsync(int id)
         {
+            // Verificar se o cliente tem vendas associadas
+            var vendas = await _vendaRepositorio.getAllAsync(v => v.IdCliente == id);
+            if (vendas.Any())
+            {
+                throw new InvalidOperationException("Não foi possível excluir o cliente pois ele possui vendas associadas.");
+            }
+            
             await _repositorio.removeAsync(id);
         }
 

@@ -176,8 +176,10 @@ const Produtos = () => {
       await produtoService.delete(id);
       await loadProdutos();
     } catch (err) {
-      alert('Erro ao excluir produto');
-      console.error(err);
+      const errorMessage = err.response?.data?.message || 
+                           'Erro ao excluir produto. Verifique se o produto não está sendo utilizado em vendas.';
+      alert(errorMessage);
+      console.error('Erro ao excluir produto:', err.response?.data || err);
     }
   };
 
