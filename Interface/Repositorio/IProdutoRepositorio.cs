@@ -12,10 +12,14 @@ namespace Interface.Repositorio
     {
         Task<Produto> addAsync(Produto produto);
         Task removeAsync(Produto produto);
-        Task<Produto> getAsync(int id);
+        Task<Produto?> getAsync(int id);
         Task<IEnumerable<Produto>>
             getAllAsync(Expression<Func<Produto, bool>>
                         expression);
         Task updateAsync(Produto produto);
+        Task<IEnumerable<Produto>> getByCategoriaAsync(int idCategoria);
+        Task<IEnumerable<Produto>> getByMarcaAsync(string marca);
+        Task<IEnumerable<Produto>> getProdutosEmEstoqueAsync();
+        Task<bool> atualizarEstoqueAsync(int idProduto, int quantidade);
     }
 }

@@ -11,10 +11,18 @@ namespace Dominio.Dtos
     public class ProdutoDto
     {
         public int Id { get; set; }
+        public string Nome { get; set; } = String.Empty;
         public string Descricao { get; set; } = String.Empty;
-        public decimal Valor { get; set; }
-        public int Quantidade { get; set; }
+        public string Marca { get; set; } = String.Empty;
+        public string Modelo { get; set; } = String.Empty;
+        public decimal Preco { get; set; }
+        public int QuantidadeEstoque { get; set; }
+        public string Especificacoes { get; set; } = String.Empty;
+        public string ImagemUrl { get; set; } = String.Empty;
+        public bool Ativo { get; set; }
+        public DateTime DataCadastro { get; set; }
         public int IdCategoria { get; set; }
+        public string NomeCategoria { get; set; } = String.Empty;
 
         [JsonIgnore]
         public virtual CategoriaDto? Categoria { get; set; }

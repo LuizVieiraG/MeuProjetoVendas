@@ -40,7 +40,7 @@ namespace InfraEstrutura.Repositorio
            return await
                 this.contexto.Categorias
                 .Where(expression)
-                .Include(p=>p.produtos)
+                .Include(p=>p.Produtos)
                 .OrderBy(p=>p.Descricao)
                 .ToListAsync(); 
         }
@@ -52,7 +52,7 @@ namespace InfraEstrutura.Repositorio
             return await
                this.contexto.Categorias
                .Where(p=>p.Id==id)
-               .Include(p => p.produtos)
+               .Include(p => p.Produtos)
                .FirstOrDefaultAsync();
         }
 

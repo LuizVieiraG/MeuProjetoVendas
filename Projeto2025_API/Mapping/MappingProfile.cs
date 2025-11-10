@@ -10,8 +10,13 @@ namespace Projeto2025_API.Mapping
             CreateMap<Categoria, CategoriaDto>()
                 .ReverseMap();
             CreateMap<Produto, ProdutoDto>()
-                    .ReverseMap();
-            
+                .ReverseMap();
+            CreateMap<Cliente, ClienteDto>()
+                .ReverseMap();
+            CreateMap<Venda, VendaDto>()
+                .ReverseMap();
+            CreateMap<ItemVenda, ItemVendaDto>()
+                .ReverseMap();
         }
     }
 }

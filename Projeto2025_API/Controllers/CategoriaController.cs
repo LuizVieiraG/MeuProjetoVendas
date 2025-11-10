@@ -68,16 +68,26 @@ namespace Projeto2025_API.Controllers
         {
             var cat = await this.service.getAsync(id);
             if (cat == null)
-                return NotFound(); //não encontrou
+                return NotFound();
             else
                 return Ok(cat);
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> deleteAsync(int id) { 
-        
-            await this.service.removeAsync (id);
-            return NoContent(); //sem retorno
+            try
+            {
+                await this.service.removeAsync(id);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erro ao excluir categoria", error = ex.Message });
+            }
         }
 
         [HttpPut]

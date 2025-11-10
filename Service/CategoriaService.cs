@@ -16,13 +16,15 @@ namespace Service
     {
 
         private ICategoriaRepositorio repositorio;
-
+        private IProdutoRepositorio produtoRepositorio;
         private IMapper mapper;
 
         public CategoriaService(ICategoriaRepositorio repositorio,
+            IProdutoRepositorio produtoRepositorio,
             IMapper mapper)
         {
             this.repositorio = repositorio;
+            this.produtoRepositorio = produtoRepositorio;
             this.mapper = mapper;
         }
 
@@ -50,8 +52,18 @@ namespace Service
         public async Task removeAsync(int id)
         {
             var cat = await this.repositorio.getAsync(id);
-            if(cat!=null)
-             await this.repositorio.removeAsync(cat);
+            if(cat == null)
+                throw new InvalidOperationException("Categoria não encontrada");
+
+            // Verificar se há produtos associados a esta categoria (ativos ou inativos)
+            // Usando getAllAsync para verificar todos os produtos, não apenas os ativos
+            var produtos = await this.produtoRepositorio.getAllAsync(p => p.IdCategoria == id);
+            if (produtos != null && produtos.Any())
+            {
+                throw new InvalidOperationException("Não foi possivel excluir Categoria, Esta sendo utilizada em um Produto.");
+            }
+
+            await this.repositorio.removeAsync(cat);
         }
 
         public async Task updateAsync(CategoriaDto categoria)

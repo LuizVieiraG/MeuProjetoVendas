@@ -11,14 +11,12 @@ namespace Dominio.Dtos
     public class CategoriaDto
     {
         public int Id { get; set; }
-       
+        public string Nome { get; set; } = String.Empty;
         public string Descricao { get; set; } = String.Empty;
-        public string DescricaoDetalhada { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime DataCadastro { get; set; }
 
-
-       // [JsonIgnore]
-        public virtual List<ProdutoDto> produtos { get; set; }
-         = new List<ProdutoDto>();
-
+        [JsonIgnore]
+        public virtual List<ProdutoDto> Produtos { get; set; } = new List<ProdutoDto>();
     }
 }

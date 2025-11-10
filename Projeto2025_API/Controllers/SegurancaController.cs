@@ -1,11 +1,7 @@
 ﻿using Dominio.Dtos;
-using Microsoft.AspNetCore.Http;
+using Interface.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
 
 namespace Projeto2025_API.Controllers
 {
@@ -13,66 +9,92 @@ namespace Projeto2025_API.Controllers
     [ApiController]
     public class SegurancaController : ControllerBase
     {
-        private IConfiguration _config;
-        public SegurancaController(IConfiguration Configuration)
+        private readonly IAuthenticationService _authService;
+
+        public SegurancaController(IAuthenticationService authService)
         {
-            _config = Configuration;
+            _authService = authService;
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.LoginAsync(loginRequest);
+
+            if (result == null)
+            {
+                return Unauthorized(new { message = "Credenciais inválidas" });
+            }
+
+            return Ok(result);
+        }
+
+        [HttpOptions("login")]
+        [AllowAnonymous]
+        public IActionResult PreflightLogin()
+        {
+            Response.Headers.Add("Access-Control-Allow-Origin", "http://localhost:5173");
+            Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            Response.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            return Ok();
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto refreshTokenRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.RefreshTokenAsync(refreshTokenRequest);
+
+            if (result == null)
+            {
+                return Unauthorized(new { message = "Refresh token inválido ou expirado" });
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("revoke-token")]
+        [Authorize]
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequestDto refreshTokenRequest)
+        {
+            var success = await _authService.RevokeTokenAsync(refreshTokenRequest.RefreshToken);
+
+            if (!success)
+            {
+                return BadRequest(new { message = "Refresh token inválido" });
+            }
+
+            return Ok(new { message = "Token revogado com sucesso" });
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            return Ok(new { message = "Logout realizado com sucesso" });
+        }
+
         [HttpPost]
-        public IActionResult Login([FromBody] UsuarioDTO loginDetalhes)
+        [Obsolete("Use /login em vez deste endpoint")]
+        public async Task<IActionResult> LoginLegacy([FromBody] UsuarioDTO loginDetalhes)
         {
-            bool resultado = ValidarUsuario(loginDetalhes);
-            if (resultado)
+            var loginRequest = new LoginRequestDto
             {
-                var tokenString = GerarTokenJWT();
-                return Ok(new
-                {
-                    access_token = tokenString,
-                    token_type = "Bearer",
-                    expires_in = 60 * 60 // 60 min
-                });
-            }
-            else
-            {
-                return Unauthorized();
-            }
+                UserName = loginDetalhes.User,
+                Senha = loginDetalhes.Senha
+            };
+
+            return await Login(loginRequest);
         }
-        private string GerarTokenJWT()
-        {
-
-            var issuer = _config["Jwt:Issuer"];
-            var audience = _config["Jwt:Audience"];
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-        new Claim(JwtRegisteredClaimNames.Sub, "1"),
-        new Claim(JwtRegisteredClaimNames.UniqueName, "ana"),
-        new Claim(ClaimTypes.Role, "Admin")
-    };
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(120),
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        private bool ValidarUsuario(UsuarioDTO loginDetalhes)
-        {
-            if (loginDetalhes.User == "ana" && loginDetalhes.Senha == "123456")
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-
     }
 }

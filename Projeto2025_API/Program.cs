@@ -17,7 +17,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configurar serialização de DateTime para usar formato local
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        // Manter datas no formato ISO 8601 mas sem conversão automática de timezone
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -26,7 +32,7 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Insira 'Bearer' + espa�o + token",
+        Description = "Insira 'Bearer' + espa�o + token",
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
@@ -45,6 +51,10 @@ builder.Services.AddSwaggerGen(c =>
 
 
 //configurar JWT
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not found");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not found");
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not found");
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,10 +69,11 @@ builder.Services.AddAuthentication(options =>
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
 
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                        ValidAudience = builder.Configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey
-                      (Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        ValidIssuer = jwtIssuer,
+                        ValidAudience = jwtAudience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                        
+                        ClockSkew = TimeSpan.Zero // Remove a tolerância de tempo
                     };
                 });
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
@@ -74,20 +85,53 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddDbContext<EmpresaContexto>
     (p=>p.UseSqlServer(
         builder.Configuration
-        .GetConnectionString("default")));
+        .GetConnectionString("Default")));
 
 //configurar o mapping
 
 builder.Services.AddAutoMapper(
     p => p.AddProfile<MappingProfile>());
 
-//configurar inje��o de dependencia
+//configurar inje��o de dependencia
 builder.Services.AddScoped<ICategoriaRepositorio,
     CategoriaRepositorio>();
 builder.Services.AddScoped<ICategoriaService,
     CategoriaService>();
 builder.Services.AddScoped<IValidator<CategoriaDto>,
         CategoriaValidation>();
+
+// Repositórios
+builder.Services.AddScoped<IProdutoRepositorio, ProdutoRepositorio>();
+builder.Services.AddScoped<IClienteRepositorio, ClienteRepositorio>();
+builder.Services.AddScoped<IVendaRepositorio, VendaRepositorio>();
+builder.Services.AddScoped<IItemVendaRepositorio, ItemVendaRepositorio>();
+builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
+
+// Serviços
+builder.Services.AddScoped<IProdutoService, ProdutoService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IVendaService, VendaService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+// Validações
+builder.Services.AddScoped<IValidator<ProdutoDto>, ProdutoValidation>();
+builder.Services.AddScoped<IValidator<ClienteDto>, ClienteValidation>();
+builder.Services.AddScoped<IValidator<VendaDto>, VendaValidation>();
+builder.Services.AddScoped<IValidator<CreateUsuarioDto>, CreateUsuarioValidation>();
+builder.Services.AddScoped<IValidator<UpdateUsuarioDto>, UpdateUsuarioValidation>();
+builder.Services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordValidation>();
+
+// Configurar CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -98,7 +142,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
